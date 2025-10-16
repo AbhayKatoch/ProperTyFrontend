@@ -16,7 +16,8 @@ function App() {
             <Dashboard />
           </ProtectedRoute>
         } />
-        <Route path="/property/:id" element={<PropertyDetail />} /> {/* ✅ detail route */}
+        {/* <Route path="/property/:id" element={<PropertyDetail />} /> ✅ detail route */}
+        <Route path="/privacy" element={<PrivacyPolicy />} />
 
       </Routes>
     </BrowserRouter>
