@@ -221,8 +221,23 @@ export default function Dashboard() {
                     onUpdate={() => {
                       api
                         .get(`properties/?broker=${brokerId}`)
-                        .then((res) => setProperties(res.data))
-                        .catch(() => toast.error("Failed to refresh list."));
+                        .then((res) => {
+  // ✅ Sort: active first, then by creation date (latest first)
+                            const sorted = res.data.sort((a, b) => {
+                              // 1️⃣ Active properties come first
+                              if (a.status === "active" && b.status !== "active") return -1;
+                              if (a.status !== "active" && b.status === "active") return 1;
+
+                              // 2️⃣ Then sort by created_at (descending)
+                              const aDate = new Date(a.created_at);
+                              const bDate = new Date(b.created_at);
+                              return bDate - aDate;
+                            });
+
+                            setProperties(sorted);
+                            setFiltered(sorted);
+                          })
+
                     }}
                   />
                 ))}
