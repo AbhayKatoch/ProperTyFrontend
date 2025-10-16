@@ -1,3 +1,6 @@
+import React from "react";
+
+
 export default function PrivacyPolicy() {
   return (
     <div style={{ padding: "2rem", maxWidth: "800px", margin: "auto", lineHeight: "1.6" }}>

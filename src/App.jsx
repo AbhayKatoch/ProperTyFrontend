@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard"
 import PropertyDetail from './pages/PropertyDetail'
 import Register from "./pages/Register"
 import ProtectedRoute from "./components/ProtectedRoute"
+import PrivacyPolicy from './pages/PrivacyPolicy'
 
 function App() {
   return (
