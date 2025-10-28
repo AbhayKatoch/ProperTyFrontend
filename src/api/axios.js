@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://key-mate.onrender.com/api/",
+  baseURL: "https://key-mate-6w2f.onrender.com/api/",
 });
 
 api.interceptors.request.use((config) => {
