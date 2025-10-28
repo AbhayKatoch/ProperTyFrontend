@@ -58,7 +58,7 @@ export default function Login() {
   }
 
   try {
-    const res = await axios.post("https://key-mate.onrender.com/api/brokers/forgot-password/", {
+    const res = await axios.post("https://key-mate-6w2f.onrender.com/api/brokers/forgot-password/", {
   phone,
 });
     alert("A WhatsApp message has been sent to reset your password.");
