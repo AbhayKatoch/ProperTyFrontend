@@ -89,12 +89,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden py-12">
       {/* 🌈 Gradient background */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-sky-100 via-white to-indigo-100" />
 
       {/* ✅ Navbar */}
-      <Navbar />
 
       <main className="p-6 space-y-8 max-w-7xl mx-auto">
         {/* Stats Section */}

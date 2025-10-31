@@ -42,7 +42,6 @@ export default function Register() {
         <Iridescence color={[0.2, 0.6, 0.9]} speed={0.8} amplitude={0.2} mouseReact />
       </div> */}
 
-      <Navbar/>
 
       <main className="flex flex-1 items-center justify-center">
         <Card className="w-full max-w-sm bg-white/90 backdrop-blur-md">

@@ -1,69 +1,175 @@
-import { Button } from "./ui/button";
-import { Home, LogOut, KeyRound } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Home, LogOut, LayoutDashboard, Menu } from "lucide-react";
+import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const brokerName = localStorage.getItem("broker_name");
   const isLoggedIn = !!localStorage.getItem("token");
 
-  // Routes where navbar should be minimal
-  const isAuthPage =
-    location.pathname === "/" || location.pathname === "/register";
+  // Show auth buttons (Login/Register) for all public pages
+  const isPublicPage =
+    [
+      "/", 
+      "/register", 
+      "/privacy", 
+      "/about", 
+      "/features", 
+      "/how-it-works", 
+      "/contact",
+      "/login",
+      "/register"
+    ].includes(location.pathname);
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
   };
 
+  const navLinks = [
+    { label: "Features", path: "/features" },
+    { label: "How It Works", path: "/how-it-works" },
+    { label: "About", path: "/about" },
+    { label: "Contact", path: "/contact" },
+  ];
+
+  // Smooth background transition on scroll
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="w-full flex items-center justify-between px-6 py-4 bg-white border-b shadow-sm">
-      {/* Left: Logo */}
-      <div
-        onClick={() => navigate(isLoggedIn ? "/dashboard" : "/")}
-        className="flex items-center gap-2 cursor-pointer select-none"
-      >
-        <h1 className="text-xl font-bold text-sky-700 tracking-tight">
-          PropertyTrackrr
-        </h1>
+    <motion.header
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className={cn(
+        "w-full fixed top-0 z-50 backdrop-blur-md transition-all duration-500 border-b",
+        scrolled
+          ? "bg-white/90 border-gray-200 shadow-sm"
+          : "bg-white/40 border-transparent"
+      )}
+    >
+      <div className="max-w-7xl mx-auto flex items-center justify-between px-6 md:px-10 py-3 md:py-4">
+        {/* === Logo Section === */}
+        <div
+          onClick={() => navigate(isLoggedIn ? "/dashboard" : "/")}
+          className="flex items-center gap-2 cursor-pointer select-none"
+        >
+          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-md">
+            <Home className="text-white w-5 h-5" />
+          </div>
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            PropertyTrackkrr
+          </h1>
+        </div>
+
+        {/* === Center Navigation === */}
+        {!isLoggedIn && (
+          <nav className="hidden md:flex items-center gap-8 text-gray-700 font-medium">
+            {navLinks.map((link) => (
+              <motion.button
+                key={link.path}
+                onClick={() => navigate(link.path)}
+                whileHover={{ scale: 1.0 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className={cn(
+                  "relative after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-blue-500 after:to-purple-600 after:transition-all after:duration-300 hover:after:w-full"
+                )}
+              >
+                {link.label}
+              </motion.button>
+            ))}
+          </nav>
+        )}
+
+        {/* === Right Section === */}
+        <div className="flex items-center gap-3">
+          {isPublicPage && !isLoggedIn ? (
+            <>
+              <Button
+                variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50 font-medium"
+                onClick={() => navigate("/login")}
+              >
+                Login
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm hover:shadow-md transition-all"
+                onClick={() => navigate("/register")}
+              >
+                Register
+              </Button>
+            </>
+          ) : isLoggedIn ? (
+            <>
+              {brokerName && (
+                <span className="hidden md:inline text-gray-700 font-medium">
+                  👋 {brokerName}
+                </span>
+              )}
+
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 border-gray-200 text-gray-700 hover:bg-blue-50 transition"
+                onClick={() => navigate("/dashboard")}
+              >
+                <LayoutDashboard size={16} />
+                Dashboard
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="flex items-center gap-2 shadow-sm hover:shadow-md transition"
+                onClick={handleLogout}
+              >
+                <LogOut size={16} />
+                Logout
+              </Button>
+            </>
+          ) : null}
+
+          {/* === Mobile Menu Toggle === */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg border border-gray-200 hover:bg-gray-100 transition"
+          >
+            <Menu size={20} className="text-gray-700" />
+          </button>
+        </div>
       </div>
 
-      {/* Right side */}
-      {isAuthPage ? (
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="border-sky-500 text-sky-600 hover:bg-sky-50"
-            onClick={() => navigate("/")}
-          >
-            Login
-          </Button>
-          <Button
-            className="bg-sky-600 hover:bg-sky-700 text-white"
-            onClick={() => navigate("/register")}
-          >
-            Register
-          </Button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-4">
-          {brokerName && (
-            <span className="text-gray-700 font-medium">
-              {brokerName}
-            </span>
-          )}
-          <Button
-            variant="destructive"
-            className="flex items-center gap-2"
-            onClick={handleLogout}
-          >
-            <LogOut size={16} />
-            Logout
-          </Button>
-        </div>
+      {/* === Mobile Menu === */}
+      {mobileMenuOpen && (
+        <motion.nav
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="md:hidden bg-white/90 backdrop-blur-md border-t border-gray-100 shadow-sm px-6 py-4 flex flex-col space-y-3"
+        >
+          {navLinks.map((link) => (
+            <button
+              key={link.path}
+              onClick={() => {
+                navigate(link.path);
+                setMobileMenuOpen(false);
+              }}
+              className="text-gray-700 text-base font-medium hover:text-blue-600 transition"
+            >
+              {link.label}
+            </button>
+          ))}
+        </motion.nav>
       )}
-    </header>
+    </motion.header>
   );
 }

@@ -78,7 +78,6 @@ export default function Login() {
           mouseReact={true}
         />
       </div> */}
-      <Navbar/>
       <main className="flex flex-1 items-center justify-center">
 
 

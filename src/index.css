@@ -118,3 +118,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+.animate-gradientFlow {
+  background-size: 100% 200%;
+  animation: gradientFlow 4s linear infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+    filter: brightness(1.3);
+  }
+}
+
+.animate-pulseGlow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
