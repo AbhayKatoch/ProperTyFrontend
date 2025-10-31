@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, ArrowRight, Sparkles } from "lucide-react";
 import Lottie from "lottie-react";
-import heroAnim from "@/assets/house.json";
+import heroAnim from "@/assets/House.json";
 import { Badge } from "@/components/ui/badge";
 import { useRef } from "react";
 
