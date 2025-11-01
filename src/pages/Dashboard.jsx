@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [city, setCity] = useState("all");
+  const [loading, setLoading] = useState(true); // 🆕 loading state
   const brokerId = localStorage.getItem("broker_id");
   const brokerName = localStorage.getItem("broker_name");
   const navigate = useNavigate();
@@ -34,13 +35,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (brokerId) {
+      setLoading(true);
       api
         .get(`properties/?broker=${brokerId}`)
         .then((res) => {
           setProperties(res.data);
           setFiltered(res.data);
         })
-        .catch(() => toast.error("Failed to load properties."));
+        .catch(() => toast.error("Failed to load properties."))
+        .finally(() => setLoading(false));
     }
   }, [brokerId]);
 
@@ -117,55 +120,63 @@ export default function Dashboard() {
         </div>
 
         {/* 📊 Stats Section */}
-        {/* 📊 Stats Section (Clean, Responsive, Text-Only) */}
-<motion.div
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.5 }}
-  className="flex flex-wrap sm:flex-nowrap justify-center sm:justify-between gap-4 mt-4"
->
-  {[
-    {
-      label: "Total Properties",
-      value: properties.length,
-      color: "from-blue-500/90 to-blue-600/90",
-    },
-    {
-      label: "Active",
-      value: properties.filter((p) => p.status === "active").length,
-      color: "from-green-500/90 to-emerald-600/90",
-    },
-    {
-      label: "Disabled",
-      value: properties.filter((p) => p.status === "disabled").length,
-      color: "from-amber-500/90 to-orange-600/90",
-    },
-  ].map((stat, i) => (
-    <motion.div
-      key={i}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: i * 0.15 }}
-      className="flex-1 min-w-[110px] sm:min-w-[160px] bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 p-4 flex flex-col items-center text-center"
-    >
-      <div
-        className={`text-2xl sm:text-3xl font-semibold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}
-      >
-        {stat.value}
-      </div>
-      <div className="text-gray-600 text-xs sm:text-sm mt-1 font-medium tracking-wide">
-        {stat.label}
-      </div>
-    </motion.div>
-  ))}
-</motion.div>
-
+        {loading ? (
+          <div className="flex flex-wrap sm:flex-nowrap justify-center sm:justify-between gap-4 mt-4 animate-pulse">
+            {[1, 2, 3].map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 min-w-[110px] sm:min-w-[160px] bg-gray-100 rounded-2xl h-24"
+              ></div>
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-wrap sm:flex-nowrap justify-center sm:justify-between gap-4 mt-4"
+          >
+            {[
+              {
+                label: "Total Properties",
+                value: properties.length,
+                color: "from-blue-500/90 to-blue-600/90",
+              },
+              {
+                label: "Active",
+                value: properties.filter((p) => p.status === "active").length,
+                color: "from-green-500/90 to-emerald-600/90",
+              },
+              {
+                label: "Disabled",
+                value: properties.filter((p) => p.status === "disabled").length,
+                color: "from-amber-500/90 to-orange-600/90",
+              },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.15 }}
+                className="flex-1 min-w-[110px] sm:min-w-[160px] bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 p-4 flex flex-col items-center text-center"
+              >
+                <div
+                  className={`text-2xl sm:text-3xl font-semibold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}
+                >
+                  {stat.value}
+                </div>
+                <div className="text-gray-600 text-xs sm:text-sm mt-1 font-medium tracking-wide">
+                  {stat.label}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         <Separator className="bg-gray-300/40" />
 
         {/* 🔍 Search + Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white/70 backdrop-blur-lg border border-white/40 shadow-sm p-5 rounded-2xl">
-          {/* Search */}
           <div className="relative flex-1 min-w-[180px]">
             <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
             <Input
@@ -177,7 +188,6 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* City Filter */}
           <div className="w-full sm:w-[180px]">
             <Select value={city} onValueChange={setCity}>
               <SelectTrigger className="border-gray-300 focus:ring-blue-500">
@@ -194,7 +204,6 @@ export default function Dashboard() {
             </Select>
           </div>
 
-          {/* Status Buttons */}
           <div className="flex flex-wrap justify-center sm:justify-end gap-2">
             {["all", "active", "disabled"].map((f) => (
               <Button
@@ -219,46 +228,59 @@ export default function Dashboard() {
             <Building2 size={20} className="text-blue-600" /> Your Listings
           </h2>
 
-          <AnimatePresence mode="wait">
-            {filtered.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center text-gray-500 mt-10 text-sm sm:text-base"
-              >
-                No properties found. Try adjusting filters or add one.
-              </motion.div>
-            ) : (
-              <motion.div
-                key="grid"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
-              >
-                {filtered.map((p) => (
-                  <PropertyCard
-                    key={p.id}
-                    property={p}
-                    onUpdate={() => {
-                      api
-                        .get(`properties/?broker=${brokerId}`)
-                        .then((res) => {
-                          const sorted = res.data.sort((a, b) => {
-                            if (a.status === "active" && b.status !== "active") return -1;
-                            if (a.status !== "active" && b.status === "active") return 1;
-                            return new Date(b.created_at) - new Date(a.created_at);
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 animate-pulse">
+              {[1, 2, 3, 4, 5, 6].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-56 bg-gray-100 rounded-2xl shadow-sm"
+                ></div>
+              ))}
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              {filtered.length === 0 ? (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center text-gray-500 mt-10 text-sm sm:text-base"
+                >
+                  No properties found. Try adjusting filters or add one.
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="grid"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+                >
+                  {filtered.map((p) => (
+                    <PropertyCard
+                      key={p.id}
+                      property={p}
+                      onUpdate={() => {
+                        api
+                          .get(`properties/?broker=${brokerId}`)
+                          .then((res) => {
+                            const sorted = res.data.sort((a, b) => {
+                              if (a.status === "active" && b.status !== "active")
+                                return -1;
+                              if (a.status !== "active" && b.status === "active")
+                                return 1;
+                              return new Date(b.created_at) - new Date(a.created_at);
+                            });
+                            setProperties(sorted);
+                            setFiltered(sorted);
                           });
-                          setProperties(sorted);
-                          setFiltered(sorted);
-                        });
-                    }}
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                      }}
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
         </section>
       </main>
     </div>
