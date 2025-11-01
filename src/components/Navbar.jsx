@@ -85,7 +85,7 @@ export default function Navbar() {
             <Home className="text-white w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <h1 className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            PropertyTrackkrr
+            PropTrackrr
           </h1>
         </div>
 

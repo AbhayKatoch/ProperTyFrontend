@@ -38,7 +38,7 @@ export default function HowItWorks() {
         <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-3">
           How{" "}
           <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            PropertyTrackkrr
+            PropTrackrr
           </span>{" "}
           Works
         </h2>

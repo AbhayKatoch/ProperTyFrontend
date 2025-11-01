@@ -57,7 +57,7 @@ export default function About() {
               variant="outline"
               className="px-4 py-1 mb-3 rounded-full border-blue-600/20 text-blue-700 bg-blue-50/70 backdrop-blur-md"
             >
-              About PropertyTrackkrr
+              About PropTrackrr
             </Badge>
 
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
@@ -68,7 +68,7 @@ export default function About() {
             </h1>
 
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              PropertyTrackkrr is a new-age platform where automation meets
+              PropTrackrr is a new-age platform where automation meets
               real estate. We empower brokers with AI tools that simplify every
               stage of property management — from onboarding to closing.
             </p>
@@ -138,7 +138,7 @@ export default function About() {
               {[
                 {
                   year: "2024",
-                  text: "PropertyTrackkrr idea is born — bridging AI with real estate operations.",
+                  text: "PropTrackrr idea is born — bridging AI with real estate operations.",
                 },
                 {
                   year: "2025",

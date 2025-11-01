@@ -18,7 +18,7 @@ export default function Features() {
     {
       icon: <Bot className="w-8 h-8 text-blue-600" />,
       title: "AI-Powered Assistant",
-      desc: "Interact with your PropertyTrackkrr assistant directly via WhatsApp — add listings, connect leads, and get updates in real-time.",
+      desc: "Interact with your PropTrackrr assistant directly via WhatsApp — add listings, connect leads, and get updates in real-time.",
       color: "from-blue-500/20 via-blue-300/10 to-transparent",
     },
     {
@@ -90,7 +90,7 @@ export default function Features() {
           className="text-gray-600 text-lg max-w-2xl mx-auto"
         >
           From AI-assisted property management to automated client communication,
-          PropertyTrackkrr simplifies everything for brokers.
+          PropTrackrr simplifies everything for brokers.
         </motion.p>
       </div>
 
@@ -147,7 +147,7 @@ export default function Features() {
         className="relative z-10 text-center mt-24 px-6"
       >
         <h3 className="text-3xl font-semibold text-gray-900 mb-3">
-          What’s Next for PropertyTrackkrr?
+          What’s Next for PropTrackrr?
         </h3>
         <p className="text-gray-600 max-w-2xl mx-auto mb-6">
           We’re building deeper integrations with WhatsApp Commerce, AI-driven

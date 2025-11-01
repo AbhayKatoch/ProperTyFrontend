@@ -40,7 +40,7 @@ export default function Contact() {
         <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-3">
           Get in Touch with{" "}
           <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            PropertyTrackkrr
+            PropTrackrr
           </span>
         </h2>
         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
@@ -67,7 +67,7 @@ export default function Contact() {
             </div>
             <div className="flex items-center gap-4">
               <Mail className="w-5 h-5 text-purple-600" />
-              <p>support@propertytrackkrr.com</p>
+              <p>support@PropTrackrr.com</p>
             </div>
             <div className="flex items-center gap-4">
               <MapPin className="w-5 h-5 text-green-600" />

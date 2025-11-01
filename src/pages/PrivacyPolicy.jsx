@@ -13,14 +13,14 @@ export default function PrivacyPolicy() {
       }}
     >
       <h1 style={{ textAlign: "center", marginBottom: "1rem" }}>
-        Privacy Policy – PropertyTrackkrr
+        Privacy Policy – PropTrackrr
       </h1>
       <p style={{ textAlign: "center", color: "#666", marginBottom: "2rem" }}>
         Last updated: {new Date().toLocaleDateString()}
       </p>
 
       <p>
-        <strong>PropertyTrackkrr</strong> is an AI-powered real estate assistant platform designed to
+        <strong>PropTrackrr</strong> is an AI-powered real estate assistant platform designed to
         help property brokers manage listings and communicate with clients through WhatsApp and a
         secure online dashboard.
       </p>
@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
 
       <hr style={{ margin: "2rem 0" }} />
       <p style={{ fontSize: "0.9rem", color: "#777", textAlign: "center" }}>
-        © {new Date().getFullYear()} PropertyTrackkrr. All rights reserved.
+        © {new Date().getFullYear()} PropTrackrr. All rights reserved.
       </p>
     </div>
   );

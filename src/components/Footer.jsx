@@ -34,7 +34,7 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="flex-1 space-y-4 text-center md:text-left">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              PropertyTrackkrr
+              PropTrackrr
             </h3>
             <p className="text-gray-600 max-w-sm mx-auto md:mx-0">
               The AI-powered real estate management platform helping brokers
@@ -129,7 +129,7 @@ export default function Footer() {
           viewport={{ once: true }}
           className="flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm gap-4"
         >
-          <p>© {new Date().getFullYear()} PropertyTrackkrr. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} PropTrackrr. All rights reserved.</p>
           <div className="flex gap-3">
             <a href="#terms" className="hover:text-purple-600 transition">
               Terms
