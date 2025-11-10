@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // 🪄 React Hot Toast
 import { Toaster, toast } from "react-hot-toast";
+import Hostcare from "./pages/Hostcase";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
           {/* <Route path="/property/:id" element={<PropertyDetail />} /> */}
           <Route path="/privacy" element={<PrivacyPolicy />} />
         </Route>
+            <Route path="/hostcare" element={<Hostcare />} />
       </Routes>
 
       {/* 🌈 Global Toast Component */}
