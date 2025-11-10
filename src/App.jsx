@@ -40,8 +40,8 @@ function App() {
           {/* Optional: Property detail route */}
           {/* <Route path="/property/:id" element={<PropertyDetail />} /> */}
           <Route path="/privacy" element={<PrivacyPolicy />} />
-        </Route>
             <Route path="/hostcare" element={<Hostcare />} />
+        </Route>
       </Routes>
 
       {/* 🌈 Global Toast Component */}
