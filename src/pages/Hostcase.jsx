@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Home, Users, Wrench, DollarSign, MessageCircle, Sparkles } from "lucide-react";
 import Lottie from "lottie-react";
-import hostAnim from "@/assets/house.json"; // ✅ Use a home maintenance or rental service animation
+import hostAnim from "@/assets/House.json"; // ✅ Use a home maintenance or rental service animation
 
 export default function Hostcare() {
   const fadeUp = (delay = 0) => ({
