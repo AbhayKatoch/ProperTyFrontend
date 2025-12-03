@@ -29,7 +29,7 @@ export default function Marketplace() {
   useEffect(() => {
     const fetchProps = async () => {
       try {
-        const res = await axios.get(`https://key-mate-6w2f.onrender.com/public/properties/`, {
+        const res = await axios.get(`https://key-mate-6w2f.onrender.com/api/public/properties/`, {
           params: {
             ordering: "-created_at",
           },
