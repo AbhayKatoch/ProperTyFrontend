@@ -11,6 +11,7 @@ import Layout from "./components/Layout";
 import HowItWorks from "./pages/HowItWorks";
 import Contact from "./pages/Contact";
 import Features from "./pages/Features";
+import Marketplace from "./pages/Marketplace";
 import { motion, AnimatePresence } from "framer-motion";
 
 // 🪄 React Hot Toast
@@ -29,6 +30,7 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/marketplace" element={<Marketplace/>}/>
           <Route
             path="/dashboard"
             element={

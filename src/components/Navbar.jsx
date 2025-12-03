@@ -36,6 +36,7 @@ export default function Navbar() {
     { label: "Features", path: "/features" },
     { label: "How It Works", path: "/how-it-works" },
     { label: "About", path: "/about" },
+    { label: "Marketplace", path: "/marketplace" },
     { label: "Contact", path: "/contact" },
   ];
 
