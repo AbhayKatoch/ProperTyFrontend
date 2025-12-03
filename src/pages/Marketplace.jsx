@@ -1,10 +1,18 @@
 // src/pages/Marketplace.jsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, MapPin, Lock, Search, Home } from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  Lock,
+  Search,
+  Home,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
+import useEmblaCarousel from "embla-carousel-react";
 
 export default function Marketplace() {
   const [properties, setProperties] = useState([]);
@@ -28,11 +36,14 @@ export default function Marketplace() {
   useEffect(() => {
     const fetchProps = async () => {
       try {
-        const res = await axios.get(`https://key-mate-6w2f.onrender.com/api/public/properties/`, {
-          params: {
-            ordering: "-created_at",
-          },
-        });
+        const res = await axios.get(
+          `https://key-mate-6w2f.onrender.com/api/public/properties/`,
+          {
+            params: {
+              ordering: "-created_at",
+            },
+          }
+        );
         setProperties(res.data);
       } catch (err) {
         console.error(err);
@@ -49,12 +60,15 @@ export default function Marketplace() {
   );
 
   const filtered = properties.filter((p) => {
-    if (city !== "all" && p.city?.toLowerCase() !== city.toLowerCase()) return false;
+    if (city !== "all" && p.city?.toLowerCase() !== city.toLowerCase())
+      return false;
     if (bhk !== "all" && String(p.bhk) !== String(bhk)) return false;
 
     if (search.trim()) {
       const s = search.toLowerCase();
-      const hay = `${p.title || ""} ${p.city || ""} ${p.locality || ""}`.toLowerCase();
+      const hay = `${p.title || ""} ${p.city || ""} ${
+        p.locality || ""
+      }`.toLowerCase();
       if (!hay.includes(s)) return false;
     }
     return true;
@@ -85,8 +99,11 @@ export default function Marketplace() {
               </h1>
               <p className="mt-2 text-gray-600 max-w-xl">
                 Explore verified listings from brokers using{" "}
-                <span className="font-semibold text-blue-700">PropTrackkrr</span>.
-                View limited details for free and unlock full access to connect with brokers.
+                <span className="font-semibold text-blue-700">
+                  PropTrackkrr
+                </span>
+                . View limited details for free and unlock full access to
+                connect with brokers.
               </p>
             </div>
 
@@ -115,7 +132,7 @@ export default function Marketplace() {
             />
           </div>
 
-          {/* City */}
+          {/* City & BHK */}
           <div className="flex gap-3 flex-wrap">
             <Select value={city} onValueChange={setCity}>
               <SelectTrigger className="w-[160px]">
@@ -131,7 +148,6 @@ export default function Marketplace() {
               </SelectContent>
             </Select>
 
-            {/* BHK */}
             <Select value={bhk} onValueChange={setBhk}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="BHK" />
@@ -152,7 +168,9 @@ export default function Marketplace() {
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-800">
-              {loading ? "Loading listings..." : `${filtered.length} properties found`}
+              {loading
+                ? "Loading listings..."
+                : `${filtered.length} properties found`}
             </h2>
           </div>
 
@@ -196,10 +214,20 @@ export default function Marketplace() {
 }
 
 function PropertyPublicCard({ property }) {
-  const primaryImage =
-    property.media && property.media.length > 0
-      ? property.media[0].storage_url
-      : null;
+  // ✅ Use Embla carousel over all media (same vibe as dashboard)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
+
+  const scrollPrev = useCallback(
+    () => emblaApi && emblaApi.scrollPrev(),
+    [emblaApi]
+  );
+  const scrollNext = useCallback(
+    () => emblaApi && emblaApi.scrollNext(),
+    [emblaApi]
+  );
+
+  const hasMedia =
+    Array.isArray(property.media) && property.media.length > 0;
 
   const priceLabel = property.price
     ? `₹ ${Number(property.price).toLocaleString()}`
@@ -214,16 +242,50 @@ function PropertyPublicCard({ property }) {
     >
       <Card className="overflow-hidden rounded-2xl bg-white/90 backdrop-blur-xl border border-white/70 shadow-md hover:shadow-xl transition-all duration-300">
         <CardHeader className="p-0 relative">
-          {primaryImage ? (
-            <img
-              src={primaryImage}
-              alt={property.title || "Property"}
-              className="w-full h-48 object-cover"
-            />
-          ) : (
-            <div className="w-full h-48 flex items-center justify-center bg-gray-100">
-              <Home className="w-10 h-10 text-gray-400" />
+          {/* 🖼 Carousel */}
+          <div ref={emblaRef} className="overflow-hidden">
+            <div className="flex">
+              {hasMedia ? (
+                property.media.map((m, idx) => (
+                  <div key={idx} className="flex-[0_0_100%] relative">
+                    <motion.img
+                      src={m.storage_url}
+                      alt={property.title || `Property ${idx + 1}`}
+                      className="w-full h-48 object-cover"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.4 }}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center bg-gray-100">
+                  <Home className="w-10 h-10 text-gray-400" />
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Carousel nav buttons */}
+          {hasMedia && property.media.length > 1 && (
+            <>
+              <Button
+                size="icon"
+                variant="secondary"
+                onClick={scrollPrev}
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-sm rounded-full"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="secondary"
+                onClick={scrollNext}
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white shadow-sm rounded-full"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </>
           )}
 
           {property.sale_or_rent && (
@@ -255,12 +317,12 @@ function PropertyPublicCard({ property }) {
             <span className="font-semibold text-blue-700">{priceLabel}</span>
             {property.bhk && (
               <span className="text-gray-600">
-                {property.bhk} BHK{property.area_sqft ? ` • ${property.area_sqft} sqft` : ""}
+                {property.bhk} BHK
+                {property.area_sqft ? ` • ${property.area_sqft} sqft` : ""}
               </span>
             )}
           </div>
 
-          {/* Short description */}
           {(property.description_beautified || property.description_raw) && (
             <p className="text-xs text-gray-600 line-clamp-2">
               {property.description_beautified || property.description_raw}
@@ -280,8 +342,6 @@ function PropertyPublicCard({ property }) {
               size="sm"
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-medium hover:from-blue-700 hover:to-purple-700 shadow-sm"
               onClick={() => {
-                // 🔒 For now, just show a placeholder.
-                // Later you’ll open a payment modal / redirect.
                 alert(
                   "Coming soon: pay securely to unlock broker contact and full details."
                 );
