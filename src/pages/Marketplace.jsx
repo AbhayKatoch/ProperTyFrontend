@@ -53,30 +53,18 @@ export default function Marketplace() {
       (typeof window !== "undefined" &&
         localStorage.getItem("marketplace_phone"));
 
-    // No phone → ask user to login and redirect
     if (!saved) {
-      toast.error("Please login to continue.");
-      if (typeof window !== "undefined") {
-        // Adjust path/query as per your routing if needed
-        window.location.href = "/login?redirect=/marketplace";
-      }
-      return null;
+      saved = window.prompt("Enter your WhatsApp number (10 digits):") || "";
+      saved = saved.trim();
+      if (!saved) return null;
     }
 
-    // If phone present but invalid → send user to profile / account page
     if (!/^\d{10}$/.test(saved)) {
-      toast.error(
-        "Your profile phone number looks invalid. Please update it in your account."
-      );
-      if (typeof window !== "undefined") {
-        // change to your profile route if different
-        window.location.href = "/profile";
-      }
+      toast.error("Please enter a valid 10-digit mobile number.");
       return null;
     }
 
     setPhone(saved);
-    // Optional: keep in localStorage so marketplace can work on refresh
     if (typeof window !== "undefined") {
       localStorage.setItem("marketplace_phone", saved);
     }
@@ -163,7 +151,7 @@ export default function Marketplace() {
           [propertyId]: contact,
         }));
 
-        // Toast only, NO redirect
+        // Just a toast – NO redirect
         toast.success(
           [
             "Contact unlocked ✅",
@@ -367,7 +355,7 @@ export default function Marketplace() {
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-700">
                 <span className="px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-sm">
-                  Phone: {phone || "Login required"}
+                  Phone: {phone || "Not set"}
                 </span>
                 <span className="px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100 shadow-sm">
                   {walletLoading
@@ -529,7 +517,7 @@ export default function Marketplace() {
                   <span>
                     Phone:{" "}
                     <span className="font-semibold">
-                      {phone || "Login required"}
+                      {phone || "Not set"}
                     </span>
                   </span>
                   <span>
