@@ -695,7 +695,7 @@ function PropertyPublicCard({ property, onUnlock, unlockedContact }) {
                     <Button
                       size="xs"
                       variant="outline"
-                      className="mt-1 text-[11px]"
+                      className="mt-1 text-[11px] px-3 py-1"
                       onClick={() =>
                         window.open(unlockedContact.whatsapp_link, "_blank")
                       }
