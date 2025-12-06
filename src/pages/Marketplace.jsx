@@ -25,117 +25,285 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import useEmblaCarousel from "embla-carousel-react";
-
+import { toast } from "react-hot-toast";
 
 const API_BASE_URL = "https://key-mate-6w2f.onrender.com/api";
+
 export default function Marketplace() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [city, setCity] = useState("all");
   const [bhk, setBhk] = useState("all");
   const [search, setSearch] = useState("");
 
-  const handleUnlockClick = async (propertyId) => {
-  try {
-    let phone =
-      localStorage.getItem("marketplace_phone") ||
-      window.prompt("Enter your WhatsApp number (10 digits):");
+  const [phone, setPhone] = useState("");
+  const [credits, setCredits] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(false);
 
-    if (!phone) return;
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+  const [selectedPack, setSelectedPack] = useState(199); // amount in ₹
 
-    phone = phone.trim();
+  // ---------- Helpers ----------
 
-    // very basic validation
-    if (!/^\d{10}$/.test(phone)) {
-      alert("Please enter a valid 10-digit mobile number (digits only).");
-      return;
+  const ensurePhone = async () => {
+    let saved = phone || (typeof window !== "undefined" && localStorage.getItem("marketplace_phone"));
+
+    if (!saved) {
+      saved = window.prompt("Enter your WhatsApp number (10 digits):") || "";
+      saved = saved.trim();
+      if (!saved) return null;
     }
 
-    localStorage.setItem("marketplace_phone", phone);
+    if (!/^\d{10}$/.test(saved)) {
+      toast.error("Please enter a valid 10-digit mobile number.");
+      return null;
+    }
 
-    // 1) Check if already unlocked / credits
-    const checkRes = await axios.get(
-      `${API_BASE_URL}/payments/check-unlock/`,
-      {
-        params: { phone, property_id: propertyId },
+    setPhone(saved);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("marketplace_phone", saved);
+    }
+    return saved;
+  };
+
+  const fetchWallet = async (phoneNumber) => {
+    if (!phoneNumber) return;
+    try {
+      setWalletLoading(true);
+      const res = await axios.get(`${API_BASE_URL}/wallet/`, {
+        params: { phone: phoneNumber },
+      });
+      setCredits(res.data.credits);
+    } catch (err) {
+      console.error("Error fetching wallet:", err);
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  // ---------- Effects ----------
+
+  useEffect(() => {
+    const fetchProps = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/public/properties/`,
+          {
+            params: {
+              ordering: "-created_at",
+            },
+          }
+        );
+        setProperties(res.data);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch properties.");
+      } finally {
+        setLoading(false);
       }
-    );
+    };
+    fetchProps();
+  }, []);
 
-    const { unlocked, credits } = checkRes.data || {};
+  useEffect(() => {
+    // load phone & wallet on mount if stored
+    if (typeof window === "undefined") return;
+    const storedPhone = localStorage.getItem("marketplace_phone");
+    if (storedPhone) {
+      setPhone(storedPhone);
+      fetchWallet(storedPhone);
+    }
+  }, []);
 
-    // Helper to show contact info
-    const showContact = (contact) => {
-      if (!contact) {
-        alert("Unlocked, but no broker contact found. Please contact support.");
+  // ---------- Unlock flow ----------
+
+  const handleUnlockClick = async (propertyId) => {
+    try {
+      const phoneNumber = await ensurePhone();
+      if (!phoneNumber) return;
+
+      // 1) Check if already unlocked & credits
+      const checkRes = await axios.get(
+        `${API_BASE_URL}/payments/check-unlock/`,
+        {
+          params: { phone: phoneNumber, property_id: propertyId },
+        }
+      );
+
+      const { unlocked, credits: currentCredits } = checkRes.data || {};
+      if (credits === null && typeof currentCredits === "number") {
+        setCredits(currentCredits);
+      }
+
+      const showContactToast = (contact) => {
+        if (!contact) {
+          toast.error(
+            "Unlocked, but no broker contact found. Please contact support."
+          );
+          return;
+        }
+
+        toast.success(
+          [
+            "Contact unlocked ✅",
+            contact.name ? `Name: ${contact.name}` : null,
+            contact.phone ? `Phone: ${contact.phone}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        );
+
+        if (contact.whatsapp_link) {
+          window.open(contact.whatsapp_link, "_blank");
+        }
+      };
+
+      // 2) Already unlocked → just get contact (idempotent)
+      if (unlocked) {
+        const unlockRes = await axios.post(
+          `${API_BASE_URL}/payments/unlock/`,
+          { phone: phoneNumber, property_id: propertyId }
+        );
+        const { contact, credits: newCredits } = unlockRes.data;
+        if (typeof newCredits === "number") setCredits(newCredits);
+        showContactToast(contact);
         return;
       }
 
-      const msgLines = [
-        "✅ Contact unlocked!",
-        contact.name ? `Name: ${contact.name}` : null,
-        contact.phone ? `Phone: ${contact.phone}` : null,
-        contact.whatsapp_link
-          ? `WhatsApp: ${contact.whatsapp_link}`
-          : null,
-      ].filter(Boolean);
-
-      alert(msgLines.join("\n"));
-
-      // Optional: directly open WhatsApp in a new tab
-      if (contact.whatsapp_link) {
-        window.open(contact.whatsapp_link, "_blank");
+      // 3) Not enough credits → open buy credits modal
+      if (!unlocked && (currentCredits === 0 || currentCredits < 1)) {
+        toast("You don’t have enough credits to unlock this property.");
+        setIsBuyModalOpen(true);
+        return;
       }
-    };
 
-    // 2) Already unlocked → just fetch contact (idempotent)
-    if (unlocked) {
+      // 4) First-time unlock with credits → deduct & unlock
       const unlockRes = await axios.post(
         `${API_BASE_URL}/payments/unlock/`,
-        { phone, property_id: propertyId }
+        { phone: phoneNumber, property_id: propertyId }
       );
 
-      // unlockRes.data: { message, credits, contact }
-      showContact(unlockRes.data.contact);
-      return;
+      const { contact, credits: newCredits } = unlockRes.data;
+      if (typeof newCredits === "number") setCredits(newCredits);
+      showContactToast(contact);
+    } catch (err) {
+      console.error("Error unlocking property:", err);
+      if (axios.isAxiosError(err)) {
+        const msg =
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          "Something went wrong. Please try again.";
+        toast.error(msg);
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     }
+  };
 
-    // 3) Not enough credits → show message (for now)
-    if (!unlocked && (credits === 0 || credits < 1)) {
-      alert(
-        "You don't have enough credits to unlock this property.\n\n" +
-          "Coming soon: Buy credits using secure Razorpay payment."
+  // ---------- Razorpay: Buy credits ----------
+
+  const handleBuyCredits = async () => {
+    try {
+      const phoneNumber = await ensurePhone();
+      if (!phoneNumber) return;
+
+      const amount = selectedPack; // in ₹
+
+      const orderRes = await axios.post(
+        `${API_BASE_URL}/payments/create-order/`,
+        {
+          phone: phoneNumber,
+          amount,
+        }
       );
-      return;
+
+      const { order_id, amount_paise, key } = orderRes.data;
+
+      if (typeof window === "undefined" || !window.Razorpay) {
+        toast.error("Razorpay is not available. Please refresh and try again.");
+        return;
+      }
+
+      const options = {
+        key,
+        amount: amount_paise,
+        currency: "INR",
+        name: "PropTrackkrr",
+        description: "Buy credits",
+        order_id,
+        prefill: {
+          contact: phoneNumber,
+        },
+        notes: {
+          phone: phoneNumber,
+        },
+        handler: async function (response) {
+          try {
+            const verifyRes = await axios.post(
+              `${API_BASE_URL}/payments/verify/`,
+              {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }
+            );
+
+            const { credits: newCredits, credits_added } = verifyRes.data;
+            if (typeof newCredits === "number") setCredits(newCredits);
+
+            toast.success(
+              `Payment successful! ${credits_added} credits added to your wallet.`
+            );
+            setIsBuyModalOpen(false);
+          } catch (e) {
+            console.error("Error verifying payment:", e);
+            toast.error("Payment verification failed. Please contact support.");
+          }
+        },
+        theme: {
+          color: "#4f46e5",
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error("Error creating Razorpay order:", err);
+      if (axios.isAxiosError(err)) {
+        const msg =
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          "Could not start payment. Please try again.";
+        toast.error(msg);
+      } else {
+        toast.error("Could not start payment. Please try again.");
+      }
     }
+  };
 
-    // 4) Try to unlock (deduct 1 credit)
-    const unlockRes = await axios.post(
-      `${API_BASE_URL}/payments/unlock/`,
-      { phone, property_id: propertyId }
-    );
+  // ---------- Filtering ----------
 
-    // unlockRes.data => { message, credits, contact }
-    const { contact, credits: newCredits } = unlockRes.data;
+  const cities = Array.from(
+    new Set(properties.map((p) => p.city).filter(Boolean))
+  );
 
-    showContact(contact);
+  const filtered = properties.filter((p) => {
+    if (city !== "all" && p.city?.toLowerCase() !== city.toLowerCase())
+      return false;
+    if (bhk !== "all" && String(p.bhk) !== String(bhk)) return false;
 
-    // Optional: you can store credits in localStorage or state
-    // localStorage.setItem("marketplace_credits", String(newCredits));
-  } catch (err) {
-    console.error("Error unlocking property:", err);
-
-    if (axios.isAxiosError(err)) {
-      const msg =
-        err.response?.data?.error ||
-        err.response?.data?.detail ||
-        "Something went wrong. Please try again.";
-      alert(msg);
-    } else {
-      alert("Something went wrong. Please try again.");
+    if (search.trim()) {
+      const s = search.toLowerCase();
+      const hay = `${p.title || ""} ${p.city || ""} ${
+        p.locality || ""
+      }`.toLowerCase();
+      if (!hay.includes(s)) return false;
     }
-  }
-};
+    return true;
+  });
 
+  // ---------- JSX ----------
 
   return (
     <div className="relative min-h-screen overflow-hidden py-16">
@@ -158,7 +326,7 @@ export default function Marketplace() {
                 Public Marketplace
               </Badge>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
-                Browse Rental & Sale Properties
+                Browse Rental &amp; Sale Properties
               </h1>
               <p className="mt-2 text-gray-600 max-w-xl">
                 Explore verified listings from brokers using{" "}
@@ -170,18 +338,39 @@ export default function Marketplace() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3 bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm px-4 py-3 rounded-2xl">
-              <Lock className="w-5 h-5 text-purple-600" />
-              <div className="text-sm text-gray-700">
-                <p className="font-semibold">Broker contact locked</p>
-                <p className="text-xs text-gray-500">
-                  Pay once to unlock full details & connect directly.
-                </p>
+            {/* Wallet summary */}
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-3 bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm px-4 py-3 rounded-2xl">
+                <Lock className="w-5 h-5 text-purple-600" />
+                <div className="text-sm text-gray-700">
+                  <p className="font-semibold">Broker contact locked</p>
+                  <p className="text-xs text-gray-500">
+                    Use credits to unlock details &amp; connect directly.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-700">
+                <span className="px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-sm">
+                  Phone: {phone || "Not set"}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100 shadow-sm">
+                  {walletLoading
+                    ? "Credits: loading..."
+                    : `Credits: ${credits ?? 0}`}
+                </span>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  className="text-xs"
+                  onClick={() => setIsBuyModalOpen(true)}
+                >
+                  Buy Credits
+                </Button>
               </div>
             </div>
           </motion.div>
         </section>
-      
+
         {/* Filters */}
         <section className="bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
           {/* Search */}
@@ -265,24 +454,104 @@ export default function Marketplace() {
                 className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
               >
                 {filtered.map((p) => (
-                <PropertyPublicCard
-                  key={p.id}
-                  property={p}
-                  onUnlock={handleUnlockClick}
-                />
-              ))}
-
+                  <PropertyPublicCard
+                    key={p.id}
+                    property={p}
+                    onUnlock={handleUnlockClick}
+                  />
+                ))}
               </motion.div>
             )}
           </AnimatePresence>
         </section>
       </main>
+
+      {/* Buy Credits Modal */}
+      {isBuyModalOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="w-full max-w-md"
+          >
+            <Card className="rounded-2xl shadow-xl border border-white/70 bg-white/95">
+              <CardHeader className="border-b border-gray-100 px-5 py-4">
+                <h3 className="font-semibold text-gray-900">
+                  Buy Credits
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Use credits to unlock broker contact details and WhatsApp
+                  numbers for properties.
+                </p>
+              </CardHeader>
+              <CardContent className="px-5 py-4 space-y-4">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-gray-700">
+                    Choose a credit pack
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[99, 199, 399].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        onClick={() => setSelectedPack(amt)}
+                        className={`flex flex-col items-center justify-center rounded-xl border px-3 py-2 text-xs font-medium transition ${
+                          selectedPack === amt
+                            ? "border-purple-500 bg-purple-50 text-purple-700"
+                            : "border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300"
+                        }`}
+                      >
+                        <span>₹{amt}</span>
+                        <span className="text-[10px] text-gray-500">
+                          ~ {Math.floor(amt / 10)} credits
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span>
+                    Phone:{" "}
+                    <span className="font-semibold">
+                      {phone || "Not set"}
+                    </span>
+                  </span>
+                  <span>
+                    Current credits:{" "}
+                    <span className="font-semibold">
+                      {credits ?? 0}
+                    </span>
+                  </span>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsBuyModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    onClick={handleBuyCredits}
+                  >
+                    Pay ₹{selectedPack} securely
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
 
 function PropertyPublicCard({ property, onUnlock }) {
-  // ✅ Use Embla carousel over all media (same vibe as dashboard)
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
 
   const scrollPrev = useCallback(
@@ -294,8 +563,7 @@ function PropertyPublicCard({ property, onUnlock }) {
     [emblaApi]
   );
 
-  const hasMedia =
-    Array.isArray(property.media) && property.media.length > 0;
+  const hasMedia = Array.isArray(property.media) && property.media.length > 0;
 
   const priceLabel = property.price
     ? `₹ ${Number(property.price).toLocaleString()}`
@@ -310,7 +578,7 @@ function PropertyPublicCard({ property, onUnlock }) {
     >
       <Card className="overflow-hidden rounded-2xl bg-white/90 backdrop-blur-xl border border-white/70 shadow-md hover:shadow-xl transition-all duration-300">
         <CardHeader className="p-0 relative">
-          {/* 🖼 Carousel */}
+          {/* Carousel */}
           <div ref={emblaRef} className="overflow-hidden">
             <div className="flex">
               {hasMedia ? (
@@ -402,19 +670,17 @@ function PropertyPublicCard({ property, onUnlock }) {
             <div className="flex items-center gap-2 mb-2">
               <Lock className="w-4 h-4 text-purple-600" />
               <span className="text-xs text-gray-600">
-                Broker details & WhatsApp contact are locked.
+                Broker details &amp; WhatsApp contact are locked.
               </span>
             </div>
 
             <Button
-            size="sm"
-            className="w-full mt-1 bg-purple-600 hover:bg-purple-700 text-white text-sm"
-            onClick={() => onUnlock(property.id)}
-          >
-            Unlock Contact & Full Details
-          </Button>
-
-
+              size="sm"
+              className="w-full mt-1 bg-purple-600 hover:bg-purple-700 text-white text-sm"
+              onClick={() => onUnlock(property.id)}
+            >
+              Unlock Contact &amp; Full Details
+            </Button>
           </div>
         </CardContent>
       </Card>
