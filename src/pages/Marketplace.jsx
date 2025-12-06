@@ -256,8 +256,13 @@ export default function Marketplace() {
                 className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
               >
                 {filtered.map((p) => (
-                  <PropertyPublicCard key={p.id} property={p} />
-                ))}
+                <PropertyPublicCard
+                  key={p.id}
+                  property={p}
+                  onUnlock={handleUnlockClick}
+                />
+              ))}
+
               </motion.div>
             )}
           </AnimatePresence>
@@ -267,7 +272,7 @@ export default function Marketplace() {
   );
 }
 
-function PropertyPublicCard({ property }) {
+function PropertyPublicCard({ property, onUnlock }) {
   // ✅ Use Embla carousel over all media (same vibe as dashboard)
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
 
@@ -394,11 +399,12 @@ function PropertyPublicCard({ property }) {
 
             <Button
             size="sm"
-            className="..."
-            onClick={() => handleUnlockClick(property.id)}
+            className="w-full mt-1 bg-purple-600 hover:bg-purple-700 text-white text-sm"
+            onClick={() => onUnlock(property.id)}
           >
             Unlock Contact & Full Details
           </Button>
+
 
           </div>
         </CardContent>
