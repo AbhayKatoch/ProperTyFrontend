@@ -26,12 +26,66 @@ import {
 import { Badge } from "@/components/ui/badge";
 import useEmblaCarousel from "embla-carousel-react";
 
+
+const API_BASE_URL = "https://key-mate-6w2f.onrender.com/api";
 export default function Marketplace() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("all");
   const [bhk, setBhk] = useState("all");
   const [search, setSearch] = useState("");
+
+  const handleUnlockClick = async (propertyId) => {
+  try {
+    const phone =
+      localStorage.getItem("marketplace_phone") ||
+      window.prompt("Enter your WhatsApp number (10 digits):");
+
+    if (!phone) return;
+
+    localStorage.setItem("marketplace_phone", phone);
+
+    // 1) Check if already unlocked / credits
+    const checkRes = await axios.get(
+      `${API_BASE_URL}/payments/check-unlock/`,
+      {
+        params: { phone, property_id: propertyId },
+      }
+    );
+
+    const { unlocked, credits } = checkRes.data;
+
+    if (unlocked) {
+      // fetch contact via unlock API (idempotent)
+      const unlockRes = await axios.post(
+        `${API_BASE_URL}/payments/unlock/`,
+        { phone, property_id: propertyId }
+      );
+      // show unlockRes.data.contact + toast
+      return;
+    }
+
+    if (credits < 1) {
+      // open "buy credits" modal instead
+      // or directly start Razorpay flow
+      // e.g. openBuyCreditsModal(phone);
+      return;
+    }
+
+    // 2) Try to unlock (deduct 1 credit)
+    const unlockRes = await axios.post(
+      `${API_BASE_URL}/payments/unlock/`,
+      { phone, property_id: propertyId }
+    );
+
+    // unlockRes.data => { message, credits, contact }
+    // Show contact phone + “WhatsApp now” CTA
+  } catch (err) {
+    console.error(err);
+    // show toast error
+  }
+};
+
 
   useEffect(() => {
     const fetchProps = async () => {
@@ -118,7 +172,7 @@ export default function Marketplace() {
             </div>
           </motion.div>
         </section>
-
+      
         {/* Filters */}
         <section className="bg-white/80 backdrop-blur-xl border border-white/60 shadow-sm rounded-2xl p-4 md:p-5 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
           {/* Search */}
@@ -339,16 +393,13 @@ function PropertyPublicCard({ property }) {
             </div>
 
             <Button
-              size="sm"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-medium hover:from-blue-700 hover:to-purple-700 shadow-sm"
-              onClick={() => {
-                alert(
-                  "Coming soon: pay securely to unlock broker contact and full details."
-                );
-              }}
-            >
-              Unlock Contact & Full Details
-            </Button>
+            size="sm"
+            className="..."
+            onClick={() => handleUnlockClick(property.id)}
+          >
+            Unlock Contact & Full Details
+          </Button>
+
           </div>
         </CardContent>
       </Card>
