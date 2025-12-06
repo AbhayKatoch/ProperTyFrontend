@@ -37,11 +37,19 @@ export default function Marketplace() {
 
   const handleUnlockClick = async (propertyId) => {
   try {
-    const phone =
+    let phone =
       localStorage.getItem("marketplace_phone") ||
       window.prompt("Enter your WhatsApp number (10 digits):");
 
     if (!phone) return;
+
+    phone = phone.trim();
+
+    // very basic validation
+    if (!/^\d{10}$/.test(phone)) {
+      alert("Please enter a valid 10-digit mobile number (digits only).");
+      return;
+    }
 
     localStorage.setItem("marketplace_phone", phone);
 
@@ -53,80 +61,81 @@ export default function Marketplace() {
       }
     );
 
-    const { unlocked, credits } = checkRes.data;
+    const { unlocked, credits } = checkRes.data || {};
 
+    // Helper to show contact info
+    const showContact = (contact) => {
+      if (!contact) {
+        alert("Unlocked, but no broker contact found. Please contact support.");
+        return;
+      }
+
+      const msgLines = [
+        "✅ Contact unlocked!",
+        contact.name ? `Name: ${contact.name}` : null,
+        contact.phone ? `Phone: ${contact.phone}` : null,
+        contact.whatsapp_link
+          ? `WhatsApp: ${contact.whatsapp_link}`
+          : null,
+      ].filter(Boolean);
+
+      alert(msgLines.join("\n"));
+
+      // Optional: directly open WhatsApp in a new tab
+      if (contact.whatsapp_link) {
+        window.open(contact.whatsapp_link, "_blank");
+      }
+    };
+
+    // 2) Already unlocked → just fetch contact (idempotent)
     if (unlocked) {
-      // fetch contact via unlock API (idempotent)
       const unlockRes = await axios.post(
         `${API_BASE_URL}/payments/unlock/`,
         { phone, property_id: propertyId }
       );
-      // show unlockRes.data.contact + toast
+
+      // unlockRes.data: { message, credits, contact }
+      showContact(unlockRes.data.contact);
       return;
     }
 
-    if (credits < 1) {
-      // open "buy credits" modal instead
-      // or directly start Razorpay flow
-      // e.g. openBuyCreditsModal(phone);
+    // 3) Not enough credits → show message (for now)
+    if (!unlocked && (credits === 0 || credits < 1)) {
+      alert(
+        "You don't have enough credits to unlock this property.\n\n" +
+          "Coming soon: Buy credits using secure Razorpay payment."
+      );
       return;
     }
 
-    // 2) Try to unlock (deduct 1 credit)
+    // 4) Try to unlock (deduct 1 credit)
     const unlockRes = await axios.post(
       `${API_BASE_URL}/payments/unlock/`,
       { phone, property_id: propertyId }
     );
 
     // unlockRes.data => { message, credits, contact }
-    // Show contact phone + “WhatsApp now” CTA
+    const { contact, credits: newCredits } = unlockRes.data;
+
+    showContact(contact);
+
+    // Optional: you can store credits in localStorage or state
+    // localStorage.setItem("marketplace_credits", String(newCredits));
   } catch (err) {
-    console.error(err);
-    // show toast error
+    console.error("Error unlocking property:", err);
+
+    if (axios.isAxiosError(err)) {
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.detail ||
+        "Something went wrong. Please try again.";
+      alert(msg);
+    } else {
+      alert("Something went wrong. Please try again.");
+    }
   }
 };
 
-
-  useEffect(() => {
-    const fetchProps = async () => {
-      try {
-        const res = await axios.get(
-          `https://key-mate-6w2f.onrender.com/api/public/properties/`,
-          {
-            params: {
-              ordering: "-created_at",
-            },
-          }
-        );
-        setProperties(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProps();
-  }, []);
-
-  // extract cities from response
-  const cities = Array.from(
-    new Set(properties.map((p) => p.city).filter(Boolean))
-  );
-
-  const filtered = properties.filter((p) => {
-    if (city !== "all" && p.city?.toLowerCase() !== city.toLowerCase())
-      return false;
-    if (bhk !== "all" && String(p.bhk) !== String(bhk)) return false;
-
-    if (search.trim()) {
-      const s = search.toLowerCase();
-      const hay = `${p.title || ""} ${p.city || ""} ${
-        p.locality || ""
-      }`.toLowerCase();
-      if (!hay.includes(s)) return false;
-    }
-    return true;
-  });
 
   return (
     <div className="relative min-h-screen overflow-hidden py-16">
