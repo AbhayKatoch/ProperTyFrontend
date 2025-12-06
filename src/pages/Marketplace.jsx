@@ -1,3 +1,4 @@
+// src/pages/Marketplace.jsx
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -39,14 +40,18 @@ export default function Marketplace() {
   const [phone, setPhone] = useState("");
   const [credits, setCredits] = useState(null);
   const [walletLoading, setWalletLoading] = useState(false);
-  const [unlockedMap, setUnlockedMap] = useState({}); 
+
+  const [unlockedMap, setUnlockedMap] = useState({}); // { [propertyId]: contact }
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
   const [selectedPack, setSelectedPack] = useState(199); // amount in ₹
 
   // ---------- Helpers ----------
 
   const ensurePhone = async () => {
-    let saved = phone || (typeof window !== "undefined" && localStorage.getItem("marketplace_phone"));
+    let saved =
+      phone ||
+      (typeof window !== "undefined" &&
+        localStorage.getItem("marketplace_phone"));
 
     if (!saved) {
       saved = window.prompt("Enter your WhatsApp number (10 digits):") || "";
@@ -86,14 +91,11 @@ export default function Marketplace() {
   useEffect(() => {
     const fetchProps = async () => {
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/public/properties/`,
-          {
-            params: {
-              ordering: "-created_at",
-            },
-          }
-        );
+        const res = await axios.get(`${API_BASE_URL}/public/properties/`, {
+          params: {
+            ordering: "-created_at",
+          },
+        });
         setProperties(res.data);
       } catch (err) {
         console.error(err);
@@ -118,91 +120,89 @@ export default function Marketplace() {
   // ---------- Unlock flow ----------
 
   const handleUnlockClick = async (propertyId) => {
-  try {
-    const phoneNumber = await ensurePhone();
-    if (!phoneNumber) return;
+    try {
+      const phoneNumber = await ensurePhone();
+      if (!phoneNumber) return;
 
-    // 1) Check if already unlocked & credits
-    const checkRes = await axios.get(
-      `${API_BASE_URL}/payments/check-unlock/`,
-      {
-        params: { phone: phoneNumber, property_id: propertyId },
+      // 1) Check if already unlocked & credits
+      const checkRes = await axios.get(
+        `${API_BASE_URL}/payments/check-unlock/`,
+        {
+          params: { phone: phoneNumber, property_id: propertyId },
+        }
+      );
+
+      const { unlocked, credits: currentCredits } = checkRes.data || {};
+      if (credits === null && typeof currentCredits === "number") {
+        setCredits(currentCredits);
       }
-    );
 
-    const { unlocked, credits: currentCredits } = checkRes.data || {};
-    if (credits === null && typeof currentCredits === "number") {
-      setCredits(currentCredits);
-    }
+      const showContactUI = (contact) => {
+        if (!contact) {
+          toast.error(
+            "Unlocked, but no broker contact found. Please contact support."
+          );
+          return;
+        }
 
-    const showContactUI = (contact) => {
-      if (!contact) {
-        toast.error(
-          "Unlocked, but no broker contact found. Please contact support."
+        // Save contact for this property so card can render it
+        setUnlockedMap((prev) => ({
+          ...prev,
+          [propertyId]: contact,
+        }));
+
+        // Just a toast – NO redirect
+        toast.success(
+          [
+            "Contact unlocked ✅",
+            contact.name ? `Name: ${contact.name}` : null,
+            contact.phone ? `Phone: ${contact.phone}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
         );
+      };
+
+      // 2) Already unlocked → just get contact (idempotent)
+      if (unlocked) {
+        const unlockRes = await axios.post(
+          `${API_BASE_URL}/payments/unlock/`,
+          { phone: phoneNumber, property_id: propertyId }
+        );
+        const { contact, credits: newCredits } = unlockRes.data;
+        if (typeof newCredits === "number") setCredits(newCredits);
+        showContactUI(contact);
         return;
       }
 
-      // ✅ Save contact for this property so card can render it
-      setUnlockedMap((prev) => ({
-        ...prev,
-        [propertyId]: contact,
-      }));
+      // 3) Not enough credits → open buy credits modal
+      if (!unlocked && (currentCredits === 0 || currentCredits < 1)) {
+        toast("You don’t have enough credits to unlock this property.");
+        setIsBuyModalOpen(true);
+        return;
+      }
 
-      // ✅ Just a toast, NO redirect
-      toast.success(
-        [
-          "Contact unlocked ✅",
-          contact.name ? `Name: ${contact.name}` : null,
-          contact.phone ? `Phone: ${contact.phone}` : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")
-      );
-    };
-
-    // 2) Already unlocked → just get contact (idempotent)
-    if (unlocked) {
+      // 4) First-time unlock with credits → deduct & unlock
       const unlockRes = await axios.post(
         `${API_BASE_URL}/payments/unlock/`,
         { phone: phoneNumber, property_id: propertyId }
       );
+
       const { contact, credits: newCredits } = unlockRes.data;
       if (typeof newCredits === "number") setCredits(newCredits);
       showContactUI(contact);
-      return;
+    } catch (err) {
+      console.error("Error unlocking property:", err);
+      if (axios.isAxiosError(err)) {
+        const msg =
+          err.response?.data?.error ||
+          err.response?.data?.detail ||
+          "Something went wrong. Please try again.";
+        toast.error(msg);
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     }
-
-    // 3) Not enough credits → open buy credits modal
-    if (!unlocked && (currentCredits === 0 || currentCredits < 1)) {
-      toast("You don’t have enough credits to unlock this property.");
-      setIsBuyModalOpen(true);
-      return;
-    }
-
-    // 4) First-time unlock with credits → deduct & unlock
-    const unlockRes = await axios.post(
-      `${API_BASE_URL}/payments/unlock/`,
-      { phone: phoneNumber, property_id: propertyId }
-    );
-
-    const { contact, credits: newCredits } = unlockRes.data;
-    if (typeof newCredits === "number") setCredits(newCredits);
-    showContactUI(contact);
-  } catch (err) {
-    console.error("Error unlocking property:", err);
-    if (axios.isAxiosError(err)) {
-      const msg =
-        err.response?.data?.error ||
-        err.response?.data?.detail ||
-        "Something went wrong. Please try again.";
-      toast.error(msg);
-    } else {
-      toast.error("Something went wrong. Please try again.");
-    }
-  }
-};
-
   };
 
   // ---------- Razorpay: Buy credits ----------
@@ -365,7 +365,6 @@ export default function Marketplace() {
                 <Button
                   size="xs"
                   className="px-3 py-1 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs"
-                  variant="outline"
                   onClick={() => setIsBuyModalOpen(true)}
                 >
                   Buy Credits
@@ -482,9 +481,7 @@ export default function Marketplace() {
           >
             <Card className="rounded-2xl shadow-xl border border-white/70 bg-white/95">
               <CardHeader className="border-b border-gray-100 px-5 py-4">
-                <h3 className="font-semibold text-gray-900">
-                  Buy Credits
-                </h3>
+                <h3 className="font-semibold text-gray-900">Buy Credits</h3>
                 <p className="text-xs text-gray-500 mt-1">
                   Use credits to unlock broker contact details and WhatsApp
                   numbers for properties.
@@ -556,7 +553,7 @@ export default function Marketplace() {
   );
 }
 
-function PropertyPublicCard({ property, onUnlock }) {
+function PropertyPublicCard({ property, onUnlock, unlockedContact }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
 
   const scrollPrev = useCallback(
@@ -670,65 +667,63 @@ function PropertyPublicCard({ property, onUnlock }) {
             </p>
           )}
 
-          {/* Locked contact section */}
           {/* Contact / unlock section */}
-<div className="mt-2 pt-3 border-t border-gray-100 space-y-2">
-  {unlockedContact ? (
-    <>
-      <div className="flex items-center gap-2">
-        <Lock className="w-4 h-4 text-green-600" />
-        <span className="text-xs text-green-700 font-medium">
-          Contact unlocked
-        </span>
-      </div>
+          <div className="mt-2 pt-3 border-t border-gray-100 space-y-2">
+            {unlockedContact ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-green-600" />
+                  <span className="text-xs text-green-700 font-medium">
+                    Contact unlocked
+                  </span>
+                </div>
 
-      <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-2 text-xs text-gray-800 space-y-1">
-        {unlockedContact.name && (
-          <p>
-            <span className="font-semibold">Broker:</span>{" "}
-            {unlockedContact.name}
-          </p>
-        )}
-        {unlockedContact.phone && (
-          <p>
-            <span className="font-semibold">Phone:</span>{" "}
-            {unlockedContact.phone}
-          </p>
-        )}
-        {unlockedContact.whatsapp_link && (
-          <Button
-            size="xs"
-            variant="outline"
-            className="mt-1 text-[11px]"
-            onClick={() =>
-              window.open(unlockedContact.whatsapp_link, "_blank")
-            }
-          >
-            Chat on WhatsApp
-          </Button>
-        )}
-      </div>
-    </>
-  ) : (
-    <>
-      <div className="flex items-center gap-2 mb-1">
-        <Lock className="w-4 h-4 text-purple-600" />
-        <span className="text-xs text-gray-600">
-          Broker details &amp; WhatsApp contact are locked.
-        </span>
-      </div>
+                <div className="rounded-xl bg-green-50 border border-green-100 px-3 py-2 text-xs text-gray-800 space-y-1">
+                  {unlockedContact.name && (
+                    <p>
+                      <span className="font-semibold">Broker:</span>{" "}
+                      {unlockedContact.name}
+                    </p>
+                  )}
+                  {unlockedContact.phone && (
+                    <p>
+                      <span className="font-semibold">Phone:</span>{" "}
+                      {unlockedContact.phone}
+                    </p>
+                  )}
+                  {unlockedContact.whatsapp_link && (
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      className="mt-1 text-[11px]"
+                      onClick={() =>
+                        window.open(unlockedContact.whatsapp_link, "_blank")
+                      }
+                    >
+                      Chat on WhatsApp
+                    </Button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <Lock className="w-4 h-4 text-purple-600" />
+                  <span className="text-xs text-gray-600">
+                    Broker details &amp; WhatsApp contact are locked.
+                  </span>
+                </div>
 
-      <Button
-        size="sm"
-        className="w-full mt-1 bg-purple-600 hover:bg-purple-700 text-white text-sm"
-        onClick={() => onUnlock(property.id)}
-      >
-        Unlock Contact &amp; Full Details
-      </Button>
-    </>
-  )}
-</div>
-
+                <Button
+                  size="sm"
+                  className="w-full mt-1 bg-purple-600 hover:bg-purple-700 text-white text-sm"
+                  onClick={() => onUnlock(property.id)}
+                >
+                  Unlock Contact &amp; Full Details
+                </Button>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>
