@@ -366,7 +366,6 @@ export default function Marketplace() {
                   size="xs"
                   className="px-3 py-1 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-xs"
                   variant="outline"
-                  className="text-xs"
                   onClick={() => setIsBuyModalOpen(true)}
                 >
                   Buy Credits
