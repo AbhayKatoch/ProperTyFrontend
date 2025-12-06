@@ -25,6 +25,7 @@ export default function Navbar() {
     "/contact",
     "/login",
     "/register",
+    "/marketplace",
   ].includes(location.pathname);
 
   const handleLogout = () => {
