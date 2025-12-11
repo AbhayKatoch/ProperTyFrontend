@@ -69,7 +69,7 @@ export default function HeroSection() {
         >
           <Button
             size="lg"
-            onClick={() => window.open("https://wa.me/91XXXXXXXXXX", "_blank")}
+            onClick={() => window.open("https://wa.me/916264566069", "_blank")}
             className="bg-[#25D366] hover:bg-[#1EBE5D] text-white font-medium shadow-md hover:shadow-lg transition-all hover:scale-105"
           >
             <MessageCircle className="mr-2 h-5 w-5" /> Try on WhatsApp
