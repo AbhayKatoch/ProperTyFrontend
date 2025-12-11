@@ -80,19 +80,22 @@ export default function Navbar() {
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-gray-700 font-medium">
-          {linksToShow.map((link) => (
-            <motion.button
-              key={link.path}
-              onClick={() => navigate(link.path)}
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 200 }}
-              className={cn(
-                "relative after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-blue-500 after:to-purple-600 after:transition-all after:duration-300 hover:after:w-full"
-              )}
-            >
-              {link.label}
-            </motion.button>
-          ))}
+          {linksToShow.map((link) => {
+            const isActive = location.pathname === link.path;
+            const baseAfter = "relative after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:bg-gradient-to-r after:from-blue-500 after:to-purple-600 after:transition-all after:duration-300";
+            const activeAfter = isActive ? "after:w-full" : "after:w-0 hover:after:w-full";
+            return (
+              <motion.button
+                key={link.path}
+                onClick={() => navigate(link.path)}
+                whileHover={{ scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 200 }}
+                className={cn(baseAfter, activeAfter)}
+              >
+                {link.label}
+              </motion.button>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
