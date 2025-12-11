@@ -202,7 +202,7 @@ export default function HowItWorks() {
       <motion.button
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.96 }}
-        onClick={() => window.open("https://wa.me/91XXXXXXXXXX", "_blank")}
+        onClick={() => window.open("https://wa.me/916264566069", "_blank")}
         className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full text-white font-medium shadow-lg hover:shadow-xl transition-all bg-gradient-to-r bg-[#25D366] hover:bg-[#1EBE5D]"
       >
         <MessageCircle className="w-5 h-5" />

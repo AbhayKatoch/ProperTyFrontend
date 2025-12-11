@@ -156,7 +156,7 @@ export default function Features() {
         </p>
 
         <Button
-          onClick={() => window.open("https://wa.me/919876543210", "_blank")}
+          onClick={() => window.open("https://wa.me/916264566069", "_blank")}
           className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
         >
           <MessageCircle className="w-5 h-5" /> Try on WhatsApp
