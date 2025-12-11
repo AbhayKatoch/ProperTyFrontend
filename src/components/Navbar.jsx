@@ -15,7 +15,15 @@ export default function Navbar() {
   const brokerName = localStorage.getItem("broker_name");
   const isLoggedIn = !!localStorage.getItem("token");
 
-  const publicLinks = [
+  const loggedOutLinks = [
+    { label: "Features", path: "/features" },
+    { label: "How It Works", path: "/how-it-works" },
+    { label: "About", path: "/about" },
+    { label: "Marketplace", path: "/marketplace" },
+    { label: "Contact", path: "/contact" }
+  ];
+
+  const loggedInLinks = [
     { label: "Home", path: "/" },
     { label: "How It Works", path: "/how-it-works" },
     { label: "Marketplace", path: "/marketplace" }
@@ -46,6 +54,8 @@ export default function Navbar() {
     navigate("/");
   };
 
+  const linksToShow = isLoggedIn ? loggedInLinks : loggedOutLinks;
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -20 }}
@@ -70,7 +80,7 @@ export default function Navbar() {
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-gray-700 font-medium">
-          {publicLinks.map((link) => (
+          {linksToShow.map((link) => (
             <motion.button
               key={link.path}
               onClick={() => navigate(link.path)}
@@ -172,7 +182,7 @@ export default function Navbar() {
             transition={{ duration: 0.3 }}
             className="md:hidden bg-white/90 backdrop-blur-md border-t border-gray-100 shadow-sm px-6 py-4 flex flex-col space-y-3"
           >
-            {publicLinks.map((link) => (
+            {linksToShow.map((link) => (
               <button
                 key={link.path}
                 onClick={() => {
